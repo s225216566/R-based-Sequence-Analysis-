@@ -45,12 +45,16 @@ install.packages(c("seqinr", "R.utils", "dplyr", "ggplot2", "tidyr", "DESeq2"))
 
 2. Create output directories:
 
-  - dir.create("Output/Part_1", recursive = TRUE)
-  - dir.create("Output/Part_2", recursive = TRUE)
+```r
+dir.create("Output/Part_1", recursive = TRUE)
+dir.create("Output/Part_2", recursive = TRUE)
+```
 
 3. Run scripts sequentially:
 
+```{r}
   source("R script.R")
+```
 
 4. Check Output folder for tables, CSVs, and plots.
 ---
