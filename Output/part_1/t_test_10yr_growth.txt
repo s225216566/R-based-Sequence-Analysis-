@@ -1,0 +1,12 @@
+
+	Welch Two Sample t-test
+
+data:  growth_northeast and growth_southwest
+t = 1.8882, df = 87.978, p-value = 0.06229
+alternative hypothesis: true difference in means is not equal to 0
+95 percent confidence interval:
+ -0.3909251 15.2909251
+sample estimates:
+mean of x mean of y 
+    42.94     35.49 
+

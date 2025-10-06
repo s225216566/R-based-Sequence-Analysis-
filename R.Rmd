@@ -1,0 +1,592 @@
+---
+title: "R based Sequence Analysis"
+author: "s225216566"
+date: "2025-10-05"
+output:
+  word_document: default
+  html_document: default
+---
+
+# PART 1
+
+```{r}
+# Load required packages
+
+library(readr)  # to read tsv faster & cleaner
+library(ggplot2)   # for plotting
+library(dplyr)    # for easy data manipulation
+library(tidyr)     # Reshape data to long format for ggplot
+
+```
+
+```{r}
+
+# Q1: Import gene expression data and preview the first 6 rows
+
+# Read in the gene_expression.tsv file
+# - sep = "\t" for tab-delimited file
+# - row.names = 1 makes the first column (gene IDs) the row names
+gene_data <- read.table("./Data/gene_expression.tsv",
+                        sep = "\t", 
+                        header = TRUE, 
+                        row.names = 1)
+
+# Show the first 6 rows of the dataset
+head(gene_data)
+
+```
+The file gene_expression.tsv was imported using the read.table() function with tab separation, assigning gene identifiers as row names. This ensures that each row corresponds to a gene and each column represents expression counts for the three samples. The head() function was applied to display the first six rows of the dataset. The output shows genes such as DDX11L1, WASH7P, and MIR6859-1 with their respective RNA-seq count values across the three samples. This confirms that the file was read correctly and the data is structured with genes as rows and samples as columns.
+
+
+```{r}
+# Q2: Add a new column for mean expression across all samples
+
+# Calculate the row-wise mean (across all columns)
+gene_data$Mean <- rowMeans(gene_data)
+
+# Display the first 6 rows with the new Mean column
+head(gene_data)
+
+```
+A new column was generated to represent the mean expression value for each gene across the three samples using the `rowMeans()` function. This additional column was appended to the dataset as “Mean.” The first six rows confirm that the calculation was performed correctly, with values such as 146.33 for WASH7P and 0.33 for genes like MIR6859-1 and MIR1302-2HG. This ensures that the dataset now contains both individual sample counts and an aggregated measure of gene expression.
+
+
+```{r}
+# Q3: Identify the 10 genes with the highest mean expression
+
+# Order the dataset by the Mean column in descending order
+top_genes <- gene_data[order(-gene_data$Mean), ]
+
+# Extract the first 10 rows (top 10 genes by mean expression)
+top_10_genes <- head(top_genes, 10)
+
+# Display the top 10 genes
+top_10_genes
+
+
+```
+The dataset was sorted in descending order by the “Mean” column using the `order()` function, and the top ten entries were extracted. The genes with the highest average expression include MT-CO1, MT-ND4, MT-CO3, MT-ND1, and MT-ATP6, with mean values ranging from approximately 232,187 to 529,317. Several mitochondrial genes dominate the list, reflecting their high transcriptional activity. This result highlights the most abundantly expressed genes across the three samples.
+
+
+```{r}
+# Q4: Count how many genes have a mean expression value less than 10
+
+# Use logical condition with sum() to count
+low_expression_genes <- sum(gene_data$Mean < 10)
+
+# Display the result
+low_expression_genes
+
+```
+The number of genes with an average expression value less than 10 was calculated using a logical condition applied to the “Mean” column. The result shows that 35,988 genes fall into this category. This indicates that a large proportion of genes in the dataset are expressed at relatively low levels across the three samples.
+
+```{r}
+
+# Q5: Create and save a histogram of mean gene expression
+
+# Create the output folder if it doesn't exist
+if(!dir.exists("output")) {
+  dir.create("output")
+}
+
+# Create a histogram of the Mean column
+hist_plot <- ggplot(gene_data, aes(x = Mean)) +
+  geom_histogram(binwidth = 5000, fill = "orange", color = "black") +
+  labs(title = "Histogram of Mean Gene Expression",
+       x = "Mean Expression",
+       y = "Number of Genes") +
+  theme_minimal()
+
+# Display the histogram
+print(hist_plot)
+
+# Save the histogram as a PNG 
+ggsave("Output/part_1/mean_expression_histogram.png", plot = hist_plot, width = 8, height = 6)
+
+```
+A histogram of the mean gene expression values was generated using `ggplot2`. The `geom_histogram()` function was applied to the “Mean” column to visualize the distribution of gene expression across all genes. The histogram shows that most genes have low mean expression values, while a smaller number of genes exhibit very high expression. The plot was saved as a PNG file in the `output` folder for inclusion in the report, ensuring that results are organized and reproducible.
+
+```{r}
+# Q6: Import tree growth data and check column names
+
+# Read in the CSV file
+growth_data <- read.csv("Data/growth_data.csv", header = TRUE)
+
+# Display the first few rows to check data
+head(growth_data)
+
+# Get the column names
+colnames(growth_data)
+
+```
+The tree growth data from `growth_data.csv` was imported using the `read.csv()` function. The dataset contains the following columns: `Site`, `TreeID`, `Circumf_2005_cm`, `Circumf_2010_cm`, `Circumf_2015_cm`, and `Circumf_2020_cm`. These columns represent the site where each tree is located, a unique identifier for each tree, and the circumference measurements recorded at five-year intervals from 2005 to 2020. The first few rows confirm that the data was read correctly and is structured for analysis.
+
+```{r}
+# Q7: Calculate mean and standard deviation of tree circumference at start (2005) and end (2020)
+
+# Group by Site and summarize
+summary_stats <- growth_data %>%
+  group_by(Site) %>%
+  summarise(
+    Mean_2005 = mean(Circumf_2005_cm, na.rm = TRUE),
+    SD_2005 = sd(Circumf_2005_cm, na.rm = TRUE),
+    Mean_2020 = mean(Circumf_2020_cm, na.rm = TRUE),
+    SD_2020 = sd(Circumf_2020_cm, na.rm = TRUE)
+  )
+
+# Display the summary table
+summary_stats
+
+# Save the summary
+write.csv(summary_stats, "Output/part_1/tree_circumference_summary.csv", row.names = FALSE)
+
+```
+The mean and standard deviation of tree circumference were calculated for the start (2005) and end (2020) of the study, grouped by site, using the `dplyr` package. In 2005, the northeast site had a mean circumference of 5.29 cm (SD = 0.91) and the southwest site had a mean of 4.86 cm (SD = 1.15). By 2020, tree growth increased substantially, with the northeast site averaging 54.23 cm (SD = 25.23) and the southwest site 45.60 cm (SD = 17.87). These statistics summarize the central tendency and variability of tree growth at both sites over the 15-year period. The results were saved as a CSV file in the `output` folder.
+
+```{r}
+# Q8: Create box plots of tree circumference at 2005 and 2020 by site
+
+growth_long <- growth_data %>%
+  pivot_longer(cols = starts_with("Circumf"),
+               names_to = "Year",
+               values_to = "Circumference")
+
+# Convert Year to a factor with proper labels
+growth_long$Year <- factor(growth_long$Year, 
+                           levels = c("Circumf_2005_cm", "Circumf_2020_cm"),
+                           labels = c("2005", "2020"))
+
+# Create the box plot
+box_plot <- ggplot(growth_long, aes(x = Year, y = Circumference, fill = Site)) +
+  geom_boxplot() +
+  labs(title = "Tree Circumference at Start and End of Study by Site",
+       x = "Year",
+       y = "Circumference (cm)") +
+  scale_fill_manual(values = c("northeast" = "forestgreen", "southwest" = "orange")) +
+  theme_minimal()
+
+# Display the plot
+print(box_plot)
+
+# Save 
+ggsave("Output/part_1/tree_circumference_boxplot.png", plot = box_plot, width = 8, height = 6)
+
+```
+A box plot was created to visualize tree circumference at the start (2005) and end (2020) of the study for both sites. The data was first reshaped to long format using `pivot_longer()` to allow year-wise plotting. The box plot shows that tree circumferences increased substantially over the 15-year period, with the northeast site generally exhibiting larger growth and higher variability compared to the southwest site. The plot was saved as a PNG file in the `output` folder to ensure reproducibility and inclusion in the report.
+
+
+```{r}
+# Q9: Calculate mean growth over the last 10 years (2010–2020) by site
+
+# Calculate growth for each tree over last 10 years
+growth_data <- growth_data %>%
+  mutate(Growth_10yr = Circumf_2020_cm - Circumf_2010_cm)
+
+# Group by Site and calculate mean growth
+mean_growth <- growth_data %>%
+  group_by(Site) %>%
+  summarise(Mean_10yr_Growth = mean(Growth_10yr, na.rm = TRUE))
+
+# Display the mean growth
+mean_growth
+
+# Save 
+write.csv(mean_growth, "output/part_1/mean_10yr_growth.csv", row.names = FALSE)
+
+```
+The mean tree growth over the last 10 years (2010–2020) was calculated by subtracting the 2010 circumference from the 2020 circumference for each tree and then averaging by site. The northeast site exhibited a mean growth of 42.94, while the southwest site had a mean growth of 35.49. This indicates that trees at the northeast site grew more on average over the last decade. The results were saved as a CSV file in the `output` folder for reporting and reproducibility.
+
+```{r}
+
+# Q10: Perform t-test to compare 10-year growth between the two sites
+
+# Extract growth values by site
+growth_northeast <- growth_data$Growth_10yr[growth_data$Site == "northeast"]
+growth_southwest <- growth_data$Growth_10yr[growth_data$Site == "southwest"]
+
+# Perform two-sample t-test
+t_test_result <- t.test(growth_northeast, growth_southwest)
+
+# Display t-test results
+t_test_result
+
+# Save the t-test summary
+capture.output(t_test_result, file = "Output/part_1/t_test_10yr_growth.txt")
+```
+A two-sample Welch t-test was conducted to determine whether the 10-year growth differed significantly between the northeast and southwest sites. The mean growth was 42.94 cm for the northeast site and 35.49 cm for the southwest site. The t-test returned a t-value of 1.888, degrees of freedom of 87.98, and a p-value of 0.0623. Since the p-value is slightly above 0.05, there is no statistically significant difference in 10-year growth between the two sites at the 5% significance level. The t-test results were saved as a text file in the `output` folder for reporting.
+
+
+# PART 2
+
+```{r}
+
+# Load libraries
+
+library(R.utils)   # for gunzip
+library(seqinr)    # for reading FASTA files
+library(dplyr)     # for table creation
+
+```
+
+
+```{r}
+
+# Q1: Counting coding sequences (CDS) in two organisms
+
+# File paths 
+destfiles <- c(
+  "Data/Anaerococcus_tetradius.cds.all.fa.gz",
+  "Data/Escherichia_coli.cds.fa.gz"
+)
+
+# Unzip files if not already extracted
+for (file in destfiles) {
+  unzipped_file <- sub(".gz$", "", file)
+  
+  if (!file.exists(unzipped_file)) {  
+    gunzip(file, remove = FALSE, overwrite = TRUE)
+  } else {
+    message(paste("File already extracted:", unzipped_file))
+  }
+}
+
+# Load sequences from unzipped FASTA files
+anaerococcus_cds <- read.fasta(file = sub(".gz$", "", destfiles[1]), seqtype = "DNA", as.string = TRUE)
+ecoli_cds        <- read.fasta(file = sub(".gz$", "", destfiles[2]), seqtype = "DNA", as.string = TRUE)
+
+# Count number of CDS in each organism
+num_cds <- data.frame(
+  Organism = c("Anaerococcus tetradius", "Escherichia coli"),
+  Number_of_CDS = c(length(anaerococcus_cds), length(ecoli_cds))
+)
+
+# Display the table
+print(num_cds)
+
+# Save the table as CSV 
+write.csv(num_cds, "Output/part_2/number_of_CDS.csv", row.names = FALSE)
+
+
+```
+The total number of coding sequences (CDS) was determined for Anaerococcus tetradius and Escherichia coli using the `seqinr` package. The CDS FASTA files were first uncompressed with `R.utils::gunzip()` to ensure they could be read without errors. The CDS sequences were then loaded, and their counts were calculated using `length()`.
+Escherichia coli has a significantly higher number of coding sequences than Anaerococcus tetradius, reflecting its larger genome and greater coding capacity. These results were saved as a CSV file in the `output` folder for reporting and reproducibility.
+
+```{r}
+# Q2: Total coding DNA length for each organism
+
+# Calculate total coding DNA length for each organism
+total_length <- data.frame(
+  Organism = c("Anaerococcus tetradius", "Escherichia coli"),
+  Total_Coding_DNA_bp = c(
+    sum(sapply(anaerococcus_cds, nchar)), 
+    sum(sapply(ecoli_cds, nchar))
+  )
+)
+
+# Display table
+print(total_length)
+
+# Save table as CSV
+write.csv(total_length, "Output/part_2/total_coding_DNA.csv", row.names = FALSE)
+
+```
+
+The total coding DNA length was calculated for Anaerococcus tetradius and Escherichia coli by summing the lengths of all coding sequences (CDS) in each organism. The CDS sequences were first loaded using `seqinr::read.fasta()`, and their lengths were computed using `nchar()`.
+
+Escherichia coli has more than twice the total coding DNA of Anaerococcus tetradius, reflecting its larger genome and higher gene content. The results were saved as a CSV file in the `output` folder for reproducibility.
+
+```{r}
+
+# Q3: CDS lengths, boxplot, mean & median
+
+# Calculate lengths of each CDS
+anaerococcus_lengths <- sapply(anaerococcus_cds, nchar)
+ecoli_lengths        <- sapply(ecoli_cds, nchar)
+
+# Combine lengths into a dataframe for plotting
+cds_lengths_df <- data.frame(
+  Organism = rep(c("Anaerococcus tetradius", "Escherichia coli"), 
+                 times = c(length(anaerococcus_lengths), length(ecoli_lengths))),
+  CDS_Length = c(anaerococcus_lengths, ecoli_lengths)
+)
+
+# Boxplot of CDS lengths
+ggplot(cds_lengths_df, aes(x = Organism, y = CDS_Length, fill = Organism)) +
+  geom_boxplot() +
+  labs(title = "Coding Sequence Lengths", y = "CDS Length (bp)") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# Save boxplot to output folder
+ggsave("output/CDS_length_boxplot.png", width = 6, height = 4)
+
+# Calculate mean and median
+cds_stats <- cds_lengths_df %>%
+  group_by(Organism) %>%
+  summarise(
+    Mean_CDS_Length = mean(CDS_Length),
+    Median_CDS_Length = median(CDS_Length)
+  )
+
+# Display stats
+print(cds_stats)
+
+# Save CDS length stats as CSV
+write.csv(cds_stats, "Output/part_2/CDS_length_stats.csv", row.names = FALSE)
+
+```
+
+The lengths of all coding sequences (CDS) were calculated for Anaerococcus tetradius and Escherichia coli using `nchar()` on sequences loaded via `seqinr::read.fasta()`. A boxplot was generated to visualize the distribution of CDS lengths across the two organisms.
+
+
+The boxplot shows the overall distribution and spread of CDS lengths, highlighting the median, interquartile range, and potential outliers in each organism. Anaerococcus tetradius has slightly longer coding sequences on average, while Escherichia coli exhibits a slightly higher median. The boxplot effectively illustrates the variability in CDS lengths and allows comparison between the two organisms.
+
+```{r}
+
+# Q4: Nucleotide and amino acid frequency
+
+# Concatenate all sequences into single strings for each organism
+anaerococcus_total_dna <- paste(unlist(anaerococcus_cds), collapse = "")
+ecoli_total_dna        <- paste(unlist(ecoli_cds), collapse = "")
+
+# Calculate nucleotide frequencies
+anaerococcus_nt_freq <- table(strsplit(anaerococcus_total_dna, "")[[1]])
+ecoli_nt_freq        <- table(strsplit(ecoli_total_dna, "")[[1]])
+
+# Convert to dataframes for plotting
+nt_freq_df <- rbind(
+  data.frame(Organism="Anaerococcus tetradius", Nucleotide=names(anaerococcus_nt_freq), Count=as.numeric(anaerococcus_nt_freq)),
+  data.frame(Organism="Escherichia coli", Nucleotide=names(ecoli_nt_freq), Count=as.numeric(ecoli_nt_freq))
+)
+
+# Plot nucleotide frequencies
+ggplot(nt_freq_df, aes(x=Nucleotide, y=Count, fill=Organism)) +
+  geom_bar(stat="identity", position="dodge") +
+  labs(title="Nucleotide Frequency", y="Count") +
+  theme_minimal()
+
+ggsave("Output/part_2/Nucleotide_Frequency_Barplot.png", width=6, height=4)
+
+# Translate DNA to protein sequences
+anaerococcus_prot <- lapply(anaerococcus_cds, function(seq) translate(s2c(seq[[1]])))
+ecoli_prot        <- lapply(ecoli_cds, function(seq) translate(s2c(seq[[1]])))
+
+# Concatenate protein sequences
+anaerococcus_total_prot <- unlist(anaerococcus_prot)
+ecoli_total_prot        <- unlist(ecoli_prot)
+
+# Calculate amino acid frequencies
+anaerococcus_aa_freq <- table(anaerococcus_total_prot)
+ecoli_aa_freq        <- table(ecoli_total_prot)
+
+# Convert to dataframe for plotting
+aa_freq_df <- rbind(
+  data.frame(Organism="Anaerococcus tetradius", AA=names(anaerococcus_aa_freq), Count=as.numeric(anaerococcus_aa_freq)),
+  data.frame(Organism="Escherichia coli", AA=names(ecoli_aa_freq), Count=as.numeric(ecoli_aa_freq))
+)
+
+# Plot amino acid frequencies
+ggplot(aa_freq_df, aes(x=AA, y=Count, fill=Organism)) +
+  geom_bar(stat="identity", position="dodge") +
+  labs(title="Amino Acid Frequency", y="Count") +
+  theme_minimal()
+
+ggsave("Output/part_2/AminoAcid_Frequency_Barplot.png", width=8, height=4)
+
+# Save frequency tables as CSV
+write.csv(nt_freq_df, "Output/part_2/Nucleotide_Frequency.csv", row.names=FALSE)
+write.csv(aa_freq_df, "Output/part_2/AminoAcid_Frequency.csv", row.names=FALSE)
+
+
+```
+The nucleotide and amino acid frequencies were calculated for Anaerococcus tetradius and Escherichia coli using their total coding sequences. Nucleotide frequencies were obtained directly from the concatenated CDS, while amino acid frequencies were determined after translating the CDS into protein sequences. Bar plots were generated for both nucleotides and amino acids to visualize differences between the two organisms.
+
+Observations from Nucleotide Frequencies:
+
+- Chargaff's Rules: The amounts of Adenine (A) roughly equal Thymine (T), and Guanine (G) roughly equals Cytosine (C) in both organisms, reflecting DNA's internal parity.
+- GC Content Differences: E. coli exhibits a high GC-content with more G and C nucleotides, whereas A. tetradius has a low GC-content, being richer in A and T nucleotides. This reflects fundamental genomic differences.
+
+Observations from Amino Acid Frequencies:
+
+- Distinct Proteome Profiles:The amino acid composition differs markedly between the two organisms, indicating different proteomic structures.
+- No Universal Most Abundant Amino Acid: Unlike nucleotide bias, no single amino acid dominates in both organisms; the distribution varies.
+- Signature Amino Acids: Certain amino acids appear consistently more or less frequent in one organism, likely reflecting codon usage preferences.
+- Reflection of Genomic Bias: These amino acid frequency differences correlate with the underlying nucleotide composition, including GC-content, influencing codon choice and protein sequence.
+
+```{r}
+
+# Q5: Codon usage and bias
+
+# Function to calculate codon usage table
+calc_codon_usage <- function(cds_list) {
+  all_codons <- unlist(lapply(cds_list, function(seq) {
+    s <- toupper(seq[[1]])
+    codons <- substring(s, seq(1, nchar(s)-2, 3), seq(3, nchar(s), 3))
+    codons <- codons[nchar(codons) == 3]  # Keep only full codons
+    return(codons)
+  }))
+  codon_table <- table(all_codons)
+  codon_table <- codon_table[order(names(codon_table))]
+  codon_table <- as.data.frame(codon_table)
+  names(codon_table) <- c("Codon", "Count")
+  codon_table$Frequency <- codon_table$Count / sum(codon_table$Count)
+  return(codon_table)
+}
+
+# Calculate codon usage
+anaerococcus_codon <- calc_codon_usage(anaerococcus_cds)
+ecoli_codon        <- calc_codon_usage(ecoli_cds)
+
+# Add organism column for plotting
+anaerococcus_codon$Organism <- "Anaerococcus tetradius"
+ecoli_codon$Organism        <- "Escherichia coli"
+
+# Combine tables
+codon_usage_df <- rbind(anaerococcus_codon, ecoli_codon)
+
+# Display stats
+print(codon_usage_df)
+
+# Plot codon usage comparison
+ggplot(codon_usage_df, aes(x=Codon, y=Frequency, fill=Organism)) +
+  geom_bar(stat="identity", position="dodge") +
+  labs(title="Codon Usage Frequency Comparison", y="Frequency") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle=90, vjust=0.5, hjust=1))
+
+# Show only the most frequent codons for clarity
+top_codons <- codon_usage_df %>%
+  group_by(Codon) %>%
+  summarise(max_freq = max(Frequency)) %>%
+  arrange(desc(max_freq)) %>%
+  head(20) %>%  # Adjust number as needed
+  pull(Codon)
+
+filtered_data <- codon_usage_df %>% filter(Codon %in% top_codons)
+
+ggplot(filtered_data, aes(x=reorder(Codon, -Frequency), y=Frequency, fill=Organism)) +
+  geom_bar(stat="identity", position="dodge", width=0.7) +
+  labs(title="Top 20 Most Frequent Codons Comparison", 
+       x="Codon", 
+       y="Frequency") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle=90, vjust=0.5, hjust=1),
+    plot.title = element_text(hjust=0.5, face="bold")
+  ) +
+  scale_fill_brewer(palette="Set1")
+
+# Save plot
+ggsave("Output/part_2/Codon_Usage_Comparison.png", width=12, height=5)
+
+# Save codon usage tables
+write.csv(anaerococcus_codon, "Output/part_2/Anaerococcus_Codon_Usage.csv", row.names=FALSE)
+write.csv(ecoli_codon, "Output/part_2/Ecoli_Codon_Usage.csv", row.names=FALSE)
+
+```
+
+A codon usage table was generated for Anaerococcus tetradius and Escherichia coli by extracting codons from all coding sequences and calculating their frequencies. Relative codon usage allows comparison of synonymous codons across the two organisms.
+
+Observations:
+
+- Distinct Codon Preferences: The two organisms show different patterns of codon usage. For example, A. tetradius favors codons like AAA and AAG more strongly, while E. coli exhibits higher frequencies for different codons.
+- Codon Usage Bias: These differences indicate a codon usage bias that reflects the organism’s genomic composition and translation efficiency. E. coli’s higher GC-content is also reflected in the preference for codons rich in G and C, whereas A. tetradius favors AT-rich codons.
+= Functional Implications: Codon bias can influence gene expression levels, translational accuracy, and adaptation to tRNA availability, highlighting evolutionary differences between the two organisms.
+- These visualizations clearly illustrate codon preferences and biases, making differences between A. tetradius and E. coli immediately apparent.
+
+
+
+```{r}
+
+# Q6: Protein k-mer analysis
+
+# Ensure output folder exists
+if(!dir.exists("Output/part_2")) dir.create("Output/part_2", recursive = TRUE)
+
+# Function to count k-mers from a list of protein sequences
+count_kmers <- function(protein_list, k = 3) {
+  all_kmers <- unlist(lapply(protein_list, function(seq) {
+    s <- toupper(seq)  # use sequence as string directly
+    if(nchar(s) >= k) {
+      kmers <- substring(s, seq(1, nchar(s)-k+1), seq(k, nchar(s)))
+      return(kmers)
+    } else {
+      return(NULL)
+    }
+  }))
+  
+  if(length(all_kmers) == 0) {
+    return(data.frame(Kmer=character(0), Count=integer(0)))
+  }
+  
+  kmer_table <- table(all_kmers)
+  kmer_df <- as.data.frame(kmer_table, stringsAsFactors = FALSE)
+  names(kmer_df) <- c("Kmer", "Count")
+  kmer_df <- kmer_df %>% arrange(desc(Count))
+  return(kmer_df)
+}
+
+# Load protein sequences (translated from CDS)
+anaerococcus_prot <- lapply(anaerococcus_cds, function(seq) paste(translate(s2c(seq)), collapse=""))
+ecoli_prot        <- lapply(ecoli_cds, function(seq) paste(translate(s2c(seq)), collapse=""))
+
+# Analyze k-mers of length 3, 4, 5
+k_values <- 3:5
+kmer_results <- list()
+
+for(k in k_values){
+  
+  # Count k-mers
+  ana_kmer <- count_kmers(anaerococcus_prot, k)
+  ecoli_kmer <- count_kmers(ecoli_prot, k)
+  
+  # Top 10 overrepresented k-mers
+  top10_over <- head(ana_kmer, 10)
+  top10_over$Ecoli_Count <- ecoli_kmer$Count[match(top10_over$Kmer, ecoli_kmer$Kmer)]
+  
+  # Bottom 10 underrepresented k-mers (>0 counts)
+  bottom10_under <- ana_kmer %>% filter(Count > 0) %>% arrange(Count) %>% head(10)
+  bottom10_under$Ecoli_Count <- ecoli_kmer$Count[match(bottom10_under$Kmer, ecoli_kmer$Kmer)]
+  
+  # Save CSVs
+  write.csv(top10_over, paste0("Output/part_2/Anaerococcus_k", k, "_top10_over.csv"), row.names = FALSE)
+  write.csv(bottom10_under, paste0("Output/part_2/Anaerococcus_k", k, "_bottom10_under.csv"), row.names = FALSE)
+  
+  # Plot top 10 overrepresented
+  p_over <- ggplot(top10_over, aes(x=reorder(Kmer, Count), y=Count, fill="Anaerococcus")) +
+    geom_bar(stat="identity") +
+    geom_point(aes(y=Ecoli_Count, color="E.coli"), size=3) +
+    coord_flip() +
+    labs(title=paste("Top 10 Overrepresented", k, "-mers in Anaerococcus tetradius"),
+         x="K-mer", y="Count") +
+    theme_minimal()
+  
+  print(p_over)  
+  ggsave(paste0("Output/part_2/Anaerococcus_k", k, "_Top10_Over.png"), plot=p_over, width=7, height=5)
+  
+  # Plot bottom 10 underrepresented
+  p_under <- ggplot(bottom10_under, aes(x=reorder(Kmer, Count), y=Count, fill="Anaerococcus")) +
+    geom_bar(stat="identity") +
+    geom_point(aes(y=Ecoli_Count, color="E.coli"), size=3) +
+    coord_flip() +
+    labs(title=paste("Top 10 Underrepresented", k, "-mers in Anaerococcus tetradius"),
+         x="K-mer", y="Count") +
+    theme_minimal()
+  
+  print(p_under)
+  ggsave(paste0("Output/part_2/Anaerococcus_k", k, "_Bottom10_Under.png"), plot=p_under, width=7, height=5)
+  
+  # Save results to list
+  kmer_results[[paste0("k", k, "_over")]] <- top10_over
+  kmer_results[[paste0("k", k, "_under")]] <- bottom10_under
+}
+
+```
+Method:
+Protein sequences were translated from coding DNA sequences. Overlapping k-mers of lengths 3–5 were counted for Anaerococcus tetradius. Top 10 overrepresented and bottom 10 underrepresented k-mers were identified, and their frequencies were compared with E. coli. Results were visualized using bar plots.
+
+Observations:
+- Overrepresented k-mers in A. tetradius are frequent in its proteome but often rare in E. coli.
+- Underrepresented k-mers occur infrequently in A. tetradius; some are more common in E. coli.
+- Differences are more pronounced for longer k-mers (4–5 amino acids).
+
