@@ -15,23 +15,14 @@ All analyses are implemented in **R**, with outputs saved in the `Output` folder
 Project/
 
 ├── Data/ # Input files
-
 │ ├── Anaerococcus_tetradius.cds.all.fa.zip
-
 │ ├── Escherichia_coli.cds.fa.zip
-
 │ ├── gene_expression.tsv
-
 │ └── growth_data.csv
-
 ├── Output/ # Outputs (CSV, PNGs)
-
 │ ├── Part_1/
-
 │ └── Part_2/
-
 ├── R script
-
 └── README.md
 
 ---
@@ -45,8 +36,8 @@ install.packages(c("seqinr", "R.utils", "dplyr", "ggplot2", "tidyr", "DESeq2"))
 
 2. Create output directories:
 
-  dir.create("Output/Part_1", recursive = TRUE)
-  dir.create("Output/Part_2", recursive = TRUE)
+  - dir.create("Output/Part_1", recursive = TRUE)
+  - dir.create("Output/Part_2", recursive = TRUE)
 
 3. Run scripts sequentially:
 
