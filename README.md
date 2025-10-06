@@ -15,14 +15,23 @@ All analyses are implemented in **R**, with outputs saved in the `Output` folder
 Project/
 
 ├── Data/ # Input files
+
 │ ├── Anaerococcus_tetradius.cds.all.fa.zip
+
 │ ├── Escherichia_coli.cds.fa.zip
+
 │ ├── gene_expression.tsv
+
 │ └── growth_data.csv
+
 ├── Output/ # Outputs (CSV, PNGs)
+
 │ ├── Part_1/
+
 │ └── Part_2/
+
 ├── R script
+
 └── README.md
 
 ---
